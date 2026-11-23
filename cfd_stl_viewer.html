@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>CFD — STL Viewer V1</title>
+    <style>
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            margin: 0;
+            background: #10151b;
+            color: #dce5ee;
+            font: 13px Inter, system-ui, Arial;
+            overflow: hidden
+        }
+
+        header {
+            height: 48px;
+            background: #171d24;
+            border-bottom: 1px solid #2a3541;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            gap: 14px;
+            font-weight: 650
+        }
+
+        .badge {
+            color: #75d8a2;
+            border: 1px solid #316a50;
+            border-radius: 4px;
+            padding: 3px 7px;
+            font-size: 10px;
+            letter-spacing: .04em
+        }
+
+        main {
+            display: flex;
+            height: calc(100vh - 48px)
+        }
+
+        aside {
+            width: 265px;
+            background: #171d24;
+            border-right: 1px solid #2a3541;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow: auto
+        }
+
+        section {
+            flex: 1;
+            position: relative;
+            min-width: 0
+        }
+
+        #viewport {
+            position: absolute;
+            inset: 0
+        }
+
+        h3 {
+            font-size: 10px;
+            letter-spacing: .12em;
+            color: #93a7bb;
+            margin: 6px 0 0;
+            text-transform: uppercase
+        }
+
+        button {
+            background: #232c35;
+            border: 1px solid #35424f;
+            color: #dce5ee;
+            padding: 9px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px
+        }
+
+        button:hover {
+            background: #2c3946
+        }
+
+        button.primary {
+            background: #1674b7;
+            border-color: #1a84ca;
+            color: white
+        }
+
+        button:disabled {
+            opacity: .45;
+            cursor: default
+        }
+
+        .btnrow {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px
+        }
+
+        #drop {
+            border: 1px dashed #3b4b5a;
+            border-radius: 7px;
+            padding: 15px 10px;
+            text-align: center;
+            color: #91a3b5;
+            line-height: 1.5
+        }
+
+        #drop.drag {
+            border-color: #52b8ff;
+            background: #172b39
+        }
+
+        .stat {
+            background: #202831;
+            border: 1px solid #2e3a46;
+            border-radius: 5px;
+            padding: 9px
+        }
+
+        .stat strong {
+            font-size: 15px;
+            display: block
+        }
+
+        .stat small {
+            color: #94a6b7
+        }
+
+        #fileName {
+            word-break: break-word;
+            color: #9cb1c4;
+            line-height: 1.4
+        }
+
+        footer {
+            position: absolute;
+            bottom: 10px;
+            left: 12px;
+            color: #899cac;
+            background: #171d24c9;
+            border: 1px solid #293541;
+            border-radius: 5px;
+            padding: 7px 9px;
+            pointer-events: none
+        }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #8293a4;
+            pointer-events: none;
+            text-align: center
+        }
+
+        .hidden {
+            display: none
+        }
+
+        label {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            color: #b8c6d3
+        }
+
+        input[type=range] {
+            width: 100%
+        }
+
+        input[type=file] {
+            display: none
+        }
+        .header-logo {
+            width: 36px;
+            height: 36px;
+            object-fit: contain;
+            display: block;
+            flex: none
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 12px
+        }
+    </style>
+</head>
+
+<body>
+    <header><img class="header-logo" src="logo-icon-dark.webp" alt="Logo">
+        <div class="header-title"> <span class="badge">CUOR</span><span
+                style="color:#9aa9b7;font-weight:400">Read-only · Three.js</span></div>
+    </header>
+    <!-- <header>CFD <span class="badge">CUORs</span><span style="color:#9aa9b7;font-weight:400">Local ·
+            Read-only · Three.js</span></header> -->
+    <main>
+        <aside>
+            <h3 class="hidden">Geometry</h3>
+            <div id="drop" class="hidden">Auto-loading <b>demo.stl</b> from this folder</div>
+            <div id="fileName" class="hidden">Loading demo.stl…</div>
+            <h3 class="hidden">Model</h3>
+            <div class="stat hidden"><strong id="triangles">—</strong><small>Triangles</small></div>
+            <div class="stat hidden"><strong id="bounds">—</strong><small>Bounding size (model units)</small></div>
+            <h3 class="stat hidden">Display</h3><label class="hidden"><input type="checkbox" id="wire" class="stat hidden"> Wireframe</label><label class="hidden"><input type="checkbox"
+                    id="edges" class="stat hidden"> Show edges</label><label class="hidden"><input type="checkbox" id="axes" class="stat hidden"> Show axes</label>
+            <label class="hidden">Surface opacity <span id="opacityLabel">100%</span></label><input id="opacity" type="range" min="20"
+                max="100" value="100" class="hidden">
+            <h3>Camera</h3>
+            <div class="btnrow"><button id="fit">Fit</button><button id="iso">Iso</button><button
+                    id="top">Top</button><button id="front">Front</button><button id="right">Right</button><button
+                    id="reset">Reset</button></div>
+            <h3>Navigation</h3>
+            <div style="color:#91a3b5;line-height:1.55">Orbit: left drag<br>Pan: right drag<br>Zoom: scroll</div>
+        </aside>
+        <section>
+            <div id="viewport"></div>
+            <div class="overlay" id="empty">
+                <div>
+                    <div style="font-size:18px;margin-bottom:7px">STL Viewer ready</div>Import an STL model to begin
+                </div>
+            </div>
+            <footer id="status">Ready · No geometry loaded</footer>
+        </section>
+    </main>
+    <script
+        type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/"}}</script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+        const host = document.querySelector('#viewport'); const scene = new THREE.Scene(); scene.background = new THREE.Color(0x10151b);
+        const camera = new THREE.PerspectiveCamera(45, host.clientWidth / host.clientHeight, .01, 1e9); camera.position.set(5, 4, 7);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false }); renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setSize(host.clientWidth, host.clientHeight); renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.15; host.appendChild(renderer.domElement);
+        scene.add(new THREE.HemisphereLight(0xd8e7ff, 0x26303b, 2)); const key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(6, 9, 5); scene.add(key); const fill = new THREE.DirectionalLight(0x79a9ff, .8); fill.position.set(-7, 4, -6); scene.add(fill);
+        const controls = new OrbitControls(camera, renderer.domElement); controls.enableDamping = true; controls.dampingFactor = .08;
+        const axes = new THREE.AxesHelper(0); scene.add(axes); let grid = null, model = null, edgeObj = null, originalCenter = new THREE.Vector3(), modelSize = new THREE.Vector3(), baseRadius = 1;
+        function status(s) { document.querySelector('#status').textContent = s }
+        function fit() { if (!model) return; const box = new THREE.Box3().setFromObject(model); const center = box.getCenter(new THREE.Vector3()); const size = box.getSize(new THREE.Vector3()); const max = Math.max(size.x, size.y, size.z) || 1; const fov = camera.fov * Math.PI / 180; let dist = max / (2 * Math.tan(fov / 2)) * 1.35; camera.position.copy(center).add(new THREE.Vector3(dist * .9, dist * .7, dist)); camera.near = Math.max(max / 10000, .001); camera.far = max * 100; camera.updateProjectionMatrix(); controls.target.copy(center); controls.update(); if (grid) scene.remove(grid); grid = new THREE.GridHelper(max * 1.4, 20, 0x42505c, 0x29333d); grid.position.y = box.min.y; scene.add(grid); axes.scale.setScalar(max * .5); status('Camera fitted to model') }
+        function setView(kind) { if (!model) return; const box = new THREE.Box3().setFromObject(model); const c = box.getCenter(new THREE.Vector3()); const max = Math.max(...box.getSize(new THREE.Vector3()).toArray(), 1); let d = max * 2.2; const dirs = { iso: [1, .8, 1], top: [0, 1, 0.001], front: [0, 0, 1], right: [1, 0, 0] }; camera.position.copy(c).add(new THREE.Vector3(...dirs[kind]).normalize().multiplyScalar(d)); camera.up.set(0, 1, 0); camera.lookAt(c); controls.target.copy(c); controls.update() }
+        function loadSTL(url) { status('Loading ' + url + '…'); const loader = new STLLoader(); loader.load(url, geo => { geo.computeVertexNormals(); if (model) scene.remove(model); if (edgeObj) { scene.remove(edgeObj); edgeObj = null } const mat = new THREE.MeshStandardMaterial({ color: 0x91b9d5, metalness: .12, roughness: .72, side: THREE.DoubleSide, wireframe: document.querySelector('#wire').checked, transparent: true, opacity: Number(document.querySelector('#opacity').value) / 100 }); model = new THREE.Mesh(geo, mat); 
+        // model.rotation.x = -Math.PI / 2; 
+        scene.add(model); if (document.querySelector('#edges').checked) { edgeObj = new THREE.LineSegments(new THREE.EdgesGeometry(geo, 25), new THREE.LineBasicMaterial({ color: 0x283b4b })); model.add(edgeObj) } const b = new THREE.Box3().setFromObject(model), s = b.getSize(new THREE.Vector3()); document.querySelector('#triangles').textContent = (geo.index ? geo.index.count / 3 : geo.attributes.position.count / 3).toLocaleString(); document.querySelector('#bounds').textContent = `${s.x.toPrecision(4)} × ${s.y.toPrecision(4)} × ${s.z.toPrecision(4)}`; document.querySelector('#fileName').textContent = url; document.querySelector('#empty').classList.add('hidden'); fit(); status(`Loaded ${url}`) }, undefined, e => { console.error(e); document.querySelector('#fileName').textContent = 'Could not load demo.stl'; status('STL load failed — check that demo.stl is beside this HTML and open via localhost') }) }
+
+        document.querySelector('#fit').onclick = fit; document.querySelector('#iso').onclick = () => setView('iso'); document.querySelector('#top').onclick = () => setView('top'); document.querySelector('#front').onclick = () => setView('front'); document.querySelector('#right').onclick = () => setView('right'); document.querySelector('#reset').onclick = () => { camera.position.set(5, 4, 7); controls.target.set(0, 0, 0); controls.update(); fit() }; document.querySelector('#wire').onchange = e => { if (model) model.material.wireframe = e.target.checked }; document.querySelector('#edges').onchange = e => { if (!model) return; if (edgeObj) { model.remove(edgeObj); edgeObj.geometry.dispose(); edgeObj.material.dispose(); edgeObj = null } if (e.target.checked) { edgeObj = new THREE.LineSegments(new THREE.EdgesGeometry(model.geometry, 25), new THREE.LineBasicMaterial({ color: 0x263f50 })); model.add(edgeObj) } }; document.querySelector('#opacity').oninput = e => { let v = e.target.value / 100; document.querySelector('#opacityLabel').textContent = e.target.value + '%'; if (model) { model.material.opacity = v; model.material.transparent = v < 1; model.material.needsUpdate = true } }; document.querySelector('#axes').onchange = e => axes.visible = e.target.checked;
+        function resize() { camera.aspect = host.clientWidth / host.clientHeight; camera.updateProjectionMatrix(); renderer.setSize(host.clientWidth, host.clientHeight) } window.addEventListener('resize', resize); renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera) });
+        // Auto-load the demo STL in the same directory (served over localhost).
+        loadSTL('./demo.stl');
+    </script>
+</body>
+
+</html>
