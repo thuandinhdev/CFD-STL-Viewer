@@ -194,6 +194,46 @@
             align-items: center;
             gap: 12px
         }
+
+        /* Mobile responsive: hide control sidebar and use full viewport for model */
+        @media (max-width: 768px) {
+        header {
+            height: 42px;
+            padding: 0 10px;
+            gap: 8px;
+            font-size: 11px;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        header span:last-child {
+            display: none;
+        }
+
+        main {
+            height: calc(100dvh - 42px);
+        }
+
+        aside {
+            display: none !important;
+        }
+
+        section {
+            width: 100%;
+            flex: 1;
+        }
+
+        #viewport {
+            inset: 0;
+        }
+
+        footer {
+            bottom: 8px;
+            left: 8px;
+            font-size: 11px;
+            padding: 6px 8px;
+        }
+        }
     </style>
 </head>
 
